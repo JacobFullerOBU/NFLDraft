@@ -1,0 +1,9 @@
+[
+  {
+    "team": "San Francisco 49ers",
+    "players": [
+      { "name": "Christian McCaffrey", "points": 320 },
+      { "name": "Elijah Mitchell", "points": 120 }
+    ]
+  }
+]
