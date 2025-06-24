@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NFL Roster Builder Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; }
+        .container { max-width: 600px; margin: 2rem auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);}
+        h2 { color: #002244; }
+        label { display: block; margin-top: 1rem; font-weight: bold; }
+        select { width: 100%; padding: 0.5rem; margin-top: 0.5rem; }
+        button { margin-top: 0.5rem; padding: 0.5rem 1rem; background: #002244; color: #fff; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer;}
+        button:hover { background: #ffb612; color: #002244; }
+        .team-name { font-size: 1rem; margin: 0.5rem 0; color: #ffb612; }
+        .slot-section { margin-bottom: 1.5rem; border-bottom: 1px solid #eee; padding-bottom: 1rem; }
+        #submitBtn { margin-top: 1.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>NFL Roster Builder Game</h2>
+        <form id="rosterForm">
+            <!-- Roster slots will be injected here -->
+        </form>
+        <button id="submitBtn" onclick="submitRoster();return false;">Submit Roster</button>
+        <div id="result"></div>
+    </div>
+    <script>
+        const teams = [
+            {
+                name: "Kansas City Chiefs",
+                players: {
+                    QB: ["Patrick Mahomes"],
+                    RB: ["Isiah Pacheco", "Clyde Edwards-Helaire"],
+                    WR: ["Rashee Rice", "Marquez Valdes-Scantling", "Skyy Moore"],
+                    TE: ["Travis Kelce"],
+                    FLEX: ["Jerick McKinnon", "Kadarius Toney"],
+                    DEF: ["Chiefs Defense"]
+                }
+            },
+            {
+                name: "San Francisco 49ers",
+                players: {
+                    QB: ["Brock Purdy"],
+                    RB: ["Christian McCaffrey", "Elijah Mitchell"],
+                    WR: ["Deebo Samuel", "Brandon Aiyuk", "Jauan Jennings"],
+                    TE: ["George Kittle"],
+                    FLEX: ["Kyle Juszczyk", "Ray-Ray McCloud"],
+                    DEF: ["49ers Defense"]
+                }
+            },
+            {
+                name: "Buffalo Bills",
+                players: {
+                    QB: ["Josh Allen"],
+                    RB: ["James Cook", "Latavius Murray"],
+                    WR: ["Stefon Diggs", "Gabe Davis", "Khalil Shakir"],
+                    TE: ["Dalton Kincaid"],
+                    FLEX: ["Dawson Knox", "Deonte Harty"],
+                    DEF: ["Bills Defense"]
+                }
+            }
+            // Add more teams as needed
+        ];
+
+        const rosterSpots = [
+            { key: "QB", label: "Quarterback (QB)" },
+            { key: "RB1", label: "Running Back 1 (RB1)" },
+            { key: "RB2", label: "Running Back 2 (RB2)" },
+            { key: "WR1", label: "Wide Receiver 1 (WR1)" },
+            { key: "WR2", label: "Wide Receiver 2 (WR2)" },
+            { key: "WR3", label: "Wide Receiver 3 (WR3)" },
+            { key: "TE", label: "Tight End (TE)" },
+            { key: "FLEX", label: "Flex (RB/WR/TE)" },
+            { key: "DEF", label: "Defense (DEF)" }
+        ];
+
+        // Track selected teams and players for each slot
+        let slotTeams = {};
+        let slotPlayers = {};
+
+        function buildRosterForm() {
+            const form = document.getElementById('rosterForm');
+            form.innerHTML = '';
+            rosterSpots.forEach(spot => {
+                form.innerHTML += `
+                    <div class="slot-section" id="section-${spot.key}">
+                        <label>${spot.label}</label>
+                        <button type="button" onclick="randomizeTeam('${spot.key}')">Randomize Team</button>
+                        <div class="team-name" id="team-${spot.key}"></div>
+                        <select id="player-${spot.key}" name="${spot.key}" style="display:none;"></select>
+                    </div>
+                `;
+            });
+        }
+
+        function randomizeTeam(slotKey) {
+            // Pick a random team
+            const idx = Math.floor(Math.random() * teams.length);
+            const team = teams[idx];
+            slotTeams[slotKey] = team;
+
+            // Determine eligible players for this slot
+            let options = [];
+            if (slotKey.startsWith('RB')) {
+                options = team.players.RB || [];
+            } else if (slotKey.startsWith('WR')) {
+                options = team.players.WR || [];
+            } else if (slotKey === 'QB') {
+                options = team.players.QB || [];
+            } else if (slotKey === 'TE') {
+                options = team.players.TE || [];
+            } else if (slotKey === 'FLEX') {
+                options = [
+                    ...(team.players.RB || []),
+                    ...(team.players.WR || []),
+                    ...(team.players.TE || []),
+                    ...(team.players.FLEX || [])
+                ];
+            } else if (slotKey === 'DEF') {
+                options = team.players.DEF || [];
+            }
+
+            // Update UI
+            document.getElementById(`team-${slotKey}`).textContent = team.name;
+            const select = document.getElementById(`player-${slotKey}`);
+            select.style.display = 'inline-block';
+            select.innerHTML = `<option value="">Select</option>` + options.map(p => `<option value="${p}">${p}</option>`).join('');
+            select.value = '';
+            slotPlayers[slotKey] = '';
+            select.onchange = function() {
+                slotPlayers[slotKey] = select.value;
+            };
+        }
+
+        function submitRoster() {
+            let allSelected = true;
+            let resultHtml = `<h3>Your Roster:</h3><ul>`;
+            rosterSpots.forEach(spot => {
+                const player = document.getElementById(`player-${spot.key}`).value;
+                const team = slotTeams[spot.key] ? slotTeams[spot.key].name : '';
+                if (!player || !team) allSelected = false;
+                resultHtml += `<li><strong>${spot.label}:</strong> ${player ? player : '[Not selected]'} <em>${team ? '(' + team + ')' : ''}</em></li>`;
+            });
+            resultHtml += "</ul>";
+            if (!allSelected) {
+                document.getElementById('result').innerHTML = "Please randomize and select a player for every slot!";
+                return;
+            }
+            document.getElementById('result').innerHTML = resultHtml;
+        }
+
+        // Initialize form on page load
+        buildRosterForm();
+    </script>
+</body>
+</html>
